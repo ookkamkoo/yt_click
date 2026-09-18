@@ -33,7 +33,7 @@ sudo apt -t trixie-backports install ydotool
     },
     "focusWaitMs": 3000,
     "firstVideo": {
-      "x": 175,
+      "x": 350,
       "y": 250,
       "pageLoadMs": 20000
     }
