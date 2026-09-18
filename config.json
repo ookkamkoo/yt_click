@@ -16,10 +16,19 @@
     },
     "focusWaitMs": 3000,
     "videoCheckMs": 7000,
-    "firstVideo": {
-      "x": 350,
-      "y": 250,
-      "pageLoadMs": 20000
-    }
+    "nextVideoBufferMs": 3000,
+    "nextVideos": [
+      { "x": 1017, "y": 869 },
+      { "x": 1017, "y": 979 },
+      { "x": 1017, "y": 1128 },
+      { "x": 1017, "y": 1257 }
+    ],
+    "initialPageLoadMs": 20000,
+    "initialVideos": [
+      { "x": 307, "y": 431 },
+      { "x": 664, "y": 431 },
+      { "x": 1063, "y": 431 },
+      { "x": 284, "y": 774 }
+    ]
   }
 }

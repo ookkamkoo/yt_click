@@ -65,16 +65,17 @@ function isYouTubeHomePage(value) {
   } catch { return false; }
 }
 
-async function clickFirstVideo({ x, y, pageLoadMs }) {
-  await delay(pageLoadMs);
-  try {
-    await run('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
-    await delay(150);
-    await run('ydotool', ['click', '0xC0']);
-  } catch (error) {
-    if (error.code === 'ENOENT') throw new Error('ydotool was not found. Install it from Debian trixie-backports.');
-    throw new Error(`Could not click the first video. Ensure ydotoold is running: ${error.message}`);
-  }
+async function clickPoint({ x, y }) {
+  await run('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
+  await delay(150);
+  await run('ydotool', ['click', '0xC0']);
+}
+
+async function clickInitialVideo(initialVideos, initialPageLoadMs) {
+  await delay(initialPageLoadMs);
+  const initialVideoIndex = Math.floor(Math.random() * initialVideos.length);
+  await clickPoint(initialVideos[initialVideoIndex]);
+  console.log(`Initial video choice: ${initialVideoIndex + 1}.`);
 }
 
 async function focusBrowser({ x, y }) {
@@ -88,7 +89,7 @@ async function focusBrowser({ x, y }) {
   }
 }
 
-async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, firstVideo, focus }) {
+async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
   try {
     await run('chromium', ['--new-window', url]);
   } catch (error) {
@@ -111,11 +112,19 @@ async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, vide
   // The browser is launched with this configured URL. Reading the desktop
   // clipboard over SSH is unreliable because it may contain terminal text.
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
-  await clickFirstVideo(firstVideo);
-  await delay(videoCheckMs);
-  const videoUrl = await copyVideoUrl();
-  const duration = await getVideoDuration(videoUrl);
-  return { clicked: true, currentUrl: url, videoUrl, duration };
+  await clickInitialVideo(initialVideos, initialPageLoadMs);
+  let videoNumber = 1;
+  while (true) {
+    await delay(videoCheckMs);
+    const videoUrl = await copyVideoUrl();
+    const duration = await getVideoDuration(videoUrl);
+    const nextVideoIndex = Math.floor(Math.random() * nextVideos.length);
+    const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;
+    console.log(`Video #${videoNumber}: ${duration.formatted} (${duration.seconds}s). Waiting ${(totalWaitMs / 1000).toFixed(0)} seconds; next choice: ${nextVideoIndex + 1}.`);
+    await delay(totalWaitMs);
+    await clickPoint(nextVideos[nextVideoIndex]);
+    videoNumber += 1;
+  }
 }
 
 module.exports = { openChromiumOnLeft };

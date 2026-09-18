@@ -12,17 +12,26 @@ function loadConfig() {
   if (!config.browser || typeof config.browser !== 'object') throw new Error('config.json.browser is required.');
   if (typeof config.browser.url !== 'string' || !config.browser.url.startsWith('http')) throw new Error('browser.url must be a valid http/https URL.');
   if (config.browser.waitMs !== undefined && (!Number.isInteger(config.browser.waitMs) || config.browser.waitMs < 0)) throw new Error('browser.waitMs must be a non-negative integer.');
-  const firstVideo = config.browser.firstVideo;
-  if (!firstVideo || typeof firstVideo !== 'object') throw new Error('browser.firstVideo is required.');
-  for (const key of ['x', 'y', 'pageLoadMs']) {
-    if (!Number.isFinite(firstVideo[key]) || firstVideo[key] < 0) throw new Error(`browser.firstVideo.${key} must be a non-negative number.`);
+  if (!Array.isArray(config.browser.initialVideos) || config.browser.initialVideos.length < 1 || config.browser.initialVideos.length > 4) {
+    throw new Error('browser.initialVideos must contain 1 to 4 coordinate objects.');
   }
+  for (const [index, point] of config.browser.initialVideos.entries()) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) throw new Error(`browser.initialVideos[${index}] must contain numeric x and y.`);
+  }
+  if (!Number.isInteger(config.browser.initialPageLoadMs) || config.browser.initialPageLoadMs < 0) throw new Error('browser.initialPageLoadMs must be a non-negative integer.');
   const focus = config.browser.focus;
   if (!focus || typeof focus !== 'object' || !Number.isFinite(focus.x) || !Number.isFinite(focus.y)) {
     throw new Error('browser.focus.x and browser.focus.y must be numbers.');
   }
   if (!Number.isInteger(config.browser.focusWaitMs) || config.browser.focusWaitMs < 0) throw new Error('browser.focusWaitMs must be a non-negative integer.');
   if (!Number.isInteger(config.browser.videoCheckMs) || config.browser.videoCheckMs < 0) throw new Error('browser.videoCheckMs must be a non-negative integer.');
+  if (!Array.isArray(config.browser.nextVideos) || config.browser.nextVideos.length < 1 || config.browser.nextVideos.length > 4) {
+    throw new Error('browser.nextVideos must contain 1 to 4 coordinate objects.');
+  }
+  for (const [index, point] of config.browser.nextVideos.entries()) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) throw new Error(`browser.nextVideos[${index}] must contain numeric x and y.`);
+  }
+  if (!Number.isInteger(config.browser.nextVideoBufferMs) || config.browser.nextVideoBufferMs < 0) throw new Error('browser.nextVideoBufferMs must be a non-negative integer.');
   const runtime = config.runtime;
   if (!runtime || !Number.isFinite(runtime.minHours) || !Number.isFinite(runtime.maxHours) || runtime.minHours <= 0 || runtime.maxHours < runtime.minHours) {
     throw new Error('runtime.minHours and runtime.maxHours must be positive numbers, with maxHours >= minHours.');
@@ -75,7 +84,7 @@ async function main() {
   const result = await openChromiumOnLeft(config.browser);
   clearTimeout(stopTimer);
   console.log(result.clicked
-    ? `Chromium opened; first video clicked. VIDEO DURATION: ${result.duration.formatted} (${result.duration.seconds}s)`
+    ? `Chromium opened; first video clicked. VIDEO DURATION: ${result.duration.formatted} (${result.duration.seconds}s). Next video choice: ${result.nextVideoIndex + 1}.`
     : `Chromium opened, but config.browser.url is not the YouTube home page: ${result.currentUrl}`);
 }
 
