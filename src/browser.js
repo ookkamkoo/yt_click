@@ -61,7 +61,18 @@ async function clickFirstVideo({ x, y, pageLoadMs }) {
   }
 }
 
-async function openChromiumOnLeft({ url, waitMs = 2000, firstVideo }) {
+async function focusBrowser({ x, y }) {
+  try {
+    await run('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
+    await run('ydotool', ['click', '0xC0']);
+    await delay(500);
+  } catch (error) {
+    if (error.code === 'ENOENT') throw new Error('ydotool was not found. Install it from Debian trixie-backports.');
+    throw new Error(`Could not focus Chromium. Ensure ydotoold is running: ${error.message}`);
+  }
+}
+
+async function openChromiumOnLeft({ url, waitMs = 2000, firstVideo, focus }) {
   try {
     await run('chromium', ['--new-window', url]);
   } catch (error) {
@@ -78,6 +89,8 @@ async function openChromiumOnLeft({ url, waitMs = 2000, firstVideo }) {
     if (error.code === 'ENOENT') throw new Error('wtype was not found. Install it with: sudo apt install wtype');
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
   }
+  // Focus a safe point on Chromium's title/tab bar before keyboard shortcuts.
+  await focusBrowser(focus);
   const currentUrl = await copyCurrentUrl();
   if (!isYouTubeHomePage(currentUrl)) return { clicked: false, currentUrl };
   await clickFirstVideo(firstVideo);

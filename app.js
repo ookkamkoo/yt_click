@@ -17,6 +17,10 @@ function loadConfig() {
   for (const key of ['x', 'y', 'pageLoadMs']) {
     if (!Number.isFinite(firstVideo[key]) || firstVideo[key] < 0) throw new Error(`browser.firstVideo.${key} must be a non-negative number.`);
   }
+  const focus = config.browser.focus;
+  if (!focus || typeof focus !== 'object' || !Number.isFinite(focus.x) || !Number.isFinite(focus.y)) {
+    throw new Error('browser.focus.x and browser.focus.y must be numbers.');
+  }
   return config.browser;
 }
 

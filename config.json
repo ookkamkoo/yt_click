@@ -2,6 +2,10 @@
   "browser": {
     "url": "https://youtube.com",
     "waitMs": 8000,
+    "focus": {
+      "x": 400,
+      "y": 30
+    },
     "firstVideo": {
       "x": 175,
       "y": 250,
