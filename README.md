@@ -6,11 +6,11 @@
 
 ```bash
 sudo apt update
-sudo apt install chromium ydotool
+sudo apt install chromium wtype
 npm install
 ```
 
-`ydotool` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้
+`wtype` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง Wayland desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้
 
 ## ตั้งค่า
 

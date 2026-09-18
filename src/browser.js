@@ -21,10 +21,10 @@ async function openChromiumOnLeft({ url, waitMs = 2000 }) {
   }
   await delay(waitMs);
   try {
-    // Linux input key codes: 125 = left Super/Windows, 105 = Left Arrow.
-    await run('ydotool', ['key', '125:1', '105:1', '105:0', '125:0']);
+    // `logo` is the Super/Windows key. This sends Super + Left Arrow on Wayland.
+    await run('wtype', ['-M', 'logo', '-k', 'Left', '-m', 'logo']);
   } catch (error) {
-    if (error.code === 'ENOENT') throw new Error('ydotool was not found. Install it with: sudo apt install ydotool');
+    if (error.code === 'ENOENT') throw new Error('wtype was not found. Install it with: sudo apt install wtype');
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
   }
 }
