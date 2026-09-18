@@ -12,6 +12,52 @@ function run(command, args) {
   });
 }
 
+function capture(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { windowsHide: true });
+    let stdout = '', stderr = '';
+    child.stdout.on('data', (data) => { stdout += data; });
+    child.stderr.on('data', (data) => { stderr += data; });
+    child.on('error', reject);
+    child.on('close', (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(stderr.trim() || `${command} exited with code ${code}`)));
+  });
+}
+
+async function copyVideoUrl() {
+  // The video click leaves Chromium focused. Select/copy its address bar.
+  await run('ydotool', ['key', '29:1', '38:1', '38:0', '29:0']); // Ctrl+L
+  await delay(400);
+  await run('ydotool', ['key', '29:1', '46:1', '46:0', '29:0']); // Ctrl+C
+  await delay(900);
+  const url = await capture('wl-paste', ['--no-newline']);
+  await run('ydotool', ['key', '1:1', '1:0']); // Escape
+  if (!/^https:\/\/(www\.)?youtube\.com\/(watch|shorts)\b/.test(url)) {
+    throw new Error(`Could not read a YouTube video URL. Clipboard contains: ${url || '(empty)'}`);
+  }
+  return url;
+}
+
+function formatDuration(seconds) {
+  const total = Math.round(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remaining = total % 60;
+  return [hours, minutes, remaining].map((value) => String(value).padStart(2, '0')).join(':');
+}
+
+async function getVideoDuration(url) {
+  let output;
+  try {
+    output = await capture('yt-dlp', ['--no-download', '--no-playlist', '--print', '%(duration)s', url]);
+  } catch (error) {
+    if (error.code === 'ENOENT') throw new Error('yt-dlp was not found. Install it with: sudo apt -t trixie-backports install yt-dlp');
+    throw new Error(`Could not read video duration: ${error.message}`);
+  }
+  const seconds = Number(output.split(/\r?\n/).at(-1));
+  if (!Number.isFinite(seconds) || seconds < 0) throw new Error(`Video duration is unavailable: ${output || '(empty)'}`);
+  return { seconds: Math.round(seconds), formatted: formatDuration(seconds) };
+}
+
 function isYouTubeHomePage(value) {
   try {
     const url = new URL(value);
@@ -42,7 +88,7 @@ async function focusBrowser({ x, y }) {
   }
 }
 
-async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, firstVideo, focus }) {
+async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, firstVideo, focus }) {
   try {
     await run('chromium', ['--new-window', url]);
   } catch (error) {
@@ -66,7 +112,10 @@ async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, firs
   // clipboard over SSH is unreliable because it may contain terminal text.
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
   await clickFirstVideo(firstVideo);
-  return { clicked: true, currentUrl: url };
+  await delay(videoCheckMs);
+  const videoUrl = await copyVideoUrl();
+  const duration = await getVideoDuration(videoUrl);
+  return { clicked: true, currentUrl: url, videoUrl, duration };
 }
 
 module.exports = { openChromiumOnLeft };
