@@ -1,12 +1,12 @@
 {
-  "name": "android-adb-scheduler",
+  "name": "raspberry-pi-chromium-launcher",
   "version": "1.0.0",
   "private": true,
-  "description": "Schedule Android screen actions through ADB",
+  "description": "Open Chromium and place its window on the left side of a Raspberry Pi desktop",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "check": "node --check app.js && node --check src/adb.js && node --check src/actions.js && node --check src/logger.js && node --check src/scheduler.js && node --check src/config.js"
+    "check": "node --check app.js && node --check src/browser.js"
   },
   "engines": {
     "node": ">=18"

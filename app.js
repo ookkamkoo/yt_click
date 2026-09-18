@@ -1,78 +1,33 @@
 'use strict';
 
-const { loadConfig } = require('./src/config');
-const { AdbClient, AdbError } = require('./src/adb');
-const { runActions } = require('./src/actions');
-const { Scheduler } = require('./src/scheduler');
-const logger = require('./src/logger');
+const fs = require('fs');
+const path = require('path');
+const { openChromiumOnLeft } = require('./src/browser');
 
-function usage() {
-  console.log('Usage:');
-  console.log('  node app.js                 Start scheduled actions');
-  console.log('  node app.js tap <x> <y>     Tap immediately');
-  console.log('  node app.js size            Show screen size');
-  console.log('  node app.js devices         Show connected ADB devices');
-}
-
-function parseCoordinate(value, name) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) throw new Error(`${name} must be a number.`);
-  return number;
-}
-
-async function createReadyAdb() {
-  const config = loadConfig();
-  const adb = new AdbClient(config.deviceId);
-  await adb.ensureDeviceReady();
-  return { adb, config };
+function loadConfig() {
+  const file = path.join(__dirname, 'config.json');
+  let config;
+  try { config = JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch (error) { throw new Error(`Cannot read config.json: ${error.message}`); }
+  if (!config.browser || typeof config.browser !== 'object') throw new Error('config.json.browser is required.');
+  if (typeof config.browser.url !== 'string' || !config.browser.url.startsWith('http')) throw new Error('browser.url must be a valid http/https URL.');
+  if (config.browser.waitMs !== undefined && (!Number.isInteger(config.browser.waitMs) || config.browser.waitMs < 0)) throw new Error('browser.waitMs must be a non-negative integer.');
+  return config.browser;
 }
 
 async function main() {
-  const [command, ...args] = process.argv.slice(2);
-
-  if (command === 'help' || command === '--help' || command === '-h') return usage();
-  if (command === 'devices') {
-    const adb = new AdbClient();
-    const output = await adb.listDevices();
-    console.log(output || 'No devices found.');
-    return;
-  }
-
-  const { adb, config } = await createReadyAdb();
-  if (command === 'tap') {
-    if (args.length !== 2) throw new Error('Usage: node app.js tap <x> <y>');
-    const x = parseCoordinate(args[0], 'x');
-    const y = parseCoordinate(args[1], 'y');
-    await adb.tapScreen(x, y);
-    logger.success(`TAP x=${x} y=${y} SUCCESS`);
-    return;
-  }
-  if (command === 'size') {
-    console.log(await adb.getScreenSize());
+  const command = process.argv[2];
+  if (command === '--help' || command === '-h') {
+    console.log('Usage: node app.js');
+    console.log('Opens Chromium and places its window on the left side of the Raspberry Pi desktop.');
     return;
   }
   if (command) throw new Error(`Unknown command: ${command}`);
-
-  const scheduler = new Scheduler(config.schedules, async (schedule) => {
-    await runActions(schedule.actions, adb, logger);
-  }, logger);
-  scheduler.start();
-  logger.info(`Scheduler started (${config.schedules.length} schedule(s), timezone Asia/Bangkok). Press Ctrl+C to stop.`);
-
-  let shuttingDown = false;
-  const shutdown = () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    scheduler.stop();
-    logger.info('Scheduler stopped. Goodbye.');
-    process.exit(0);
-  };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  await openChromiumOnLeft(loadConfig());
+  console.log('Chromium opened and sent to the left side of the screen.');
 }
 
 main().catch((error) => {
-  const message = error instanceof AdbError ? error.message : error.message || String(error);
-  logger.error(message);
+  console.error(`ERROR: ${error.message || error}`);
   process.exitCode = 1;
 });

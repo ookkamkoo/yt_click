@@ -1,25 +1,6 @@
 {
-  "deviceId": "",
-  "schedules": [
-    {
-      "time": "08:00",
-      "actions": [
-        {
-          "type": "repeat",
-          "count": 0,
-          "actions": [
-            { "type": "tap", "x": 500, "y": 150 },
-            { "type": "wait", "ms": 3000 },
-            { "type": "text", "value": "YOUR_SEARCH_QUERY" },
-            { "type": "keyevent", "key": "ENTER" },
-            { "type": "wait", "ms": 5000 },
-            { "type": "tap", "x": 500, "y": 700 },
-            { "type": "wait", "ms": 600000 },
-            { "type": "tap", "x": 950, "y": 1200 },
-            { "type": "wait", "ms": 5000 }
-          ]
-        }
-      ]
-    }
-  ]
+  "browser": {
+    "url": "https://youtube.com",
+    "waitMs": 2000
+  }
 }
