@@ -6,11 +6,17 @@
 
 ```bash
 sudo apt update
-sudo apt install chromium wtype
+sudo apt install chromium wtype wl-clipboard
 npm install
 ```
 
-`wtype` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง Wayland desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้
+`wtype` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง Wayland desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้. `wl-clipboard` ใช้อ่าน URL จาก address bar.
+
+ติดตั้ง `ydotool` จาก `trixie-backports` เพื่อให้โปรแกรมคลิกพิกัดเมาส์:
+
+```bash
+sudo apt -t trixie-backports install ydotool
+```
 
 ## ตั้งค่า
 
@@ -20,12 +26,17 @@ npm install
 {
   "browser": {
     "url": "https://youtube.com",
-    "waitMs": 5000
+    "waitMs": 5000,
+    "firstVideo": {
+      "x": 175,
+      "y": 250,
+      "pageLoadMs": 6000
+    }
   }
 }
 ```
 
-`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `5000` คือ 5 วินาที. เพิ่มเป็น `8000` หาก Pi เปิดเบราว์เซอร์ช้า
+`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `5000` คือ 5 วินาที. `pageLoadMs` คือเวลารอให้หน้า YouTube โหลดก่อนคลิกวิดีโอแรก. พิกัด `x`/`y` ต้องแก้ให้ตรงกับหน้าจอ Pi ของคุณ
 
 ## เริ่มโปรแกรม
 
@@ -35,6 +46,6 @@ npm install
 npm start
 ```
 
-เมื่อ Chromium เปิดขึ้น โปรแกรมจะส่ง `Super + Left Arrow` เพื่อให้ window manager จัดหน้าต่างไปทางซ้าย
+เมื่อ Chromium เปิดขึ้น โปรแกรมจะส่ง `Super + Left Arrow` เพื่อให้ window manager จัดหน้าต่างไปทางซ้าย จากนั้นคัดลอก URL ปัจจุบันจาก address bar; หากเป็น `https://www.youtube.com/` จะรอหน้าโหลดแล้วคลิกพิกัดวิดีโอแรก
 
 > หากสั่งผ่าน SSH ต้องใช้ user เดียวกับที่ login desktop อยู่ และ desktop session ต้องกำลังทำงาน มิฉะนั้น Chromium จะไม่มีหน้าจอสำหรับเปิด
