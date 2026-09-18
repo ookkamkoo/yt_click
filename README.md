@@ -26,17 +26,17 @@ sudo apt -t trixie-backports install ydotool
 {
   "browser": {
     "url": "https://youtube.com",
-    "waitMs": 5000,
+    "waitMs": 8000,
     "firstVideo": {
       "x": 175,
       "y": 250,
-      "pageLoadMs": 6000
+      "pageLoadMs": 15000
     }
   }
 }
 ```
 
-`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `5000` คือ 5 วินาที. `pageLoadMs` คือเวลารอให้หน้า YouTube โหลดก่อนคลิกวิดีโอแรก. พิกัด `x`/`y` ต้องแก้ให้ตรงกับหน้าจอ Pi ของคุณ
+`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `8000` คือ 8 วินาที. `pageLoadMs` คือเวลารอให้หน้า YouTube โหลดก่อนคลิกวิดีโอแรก; ค่าเริ่มต้น `15000` คือ 15 วินาที. พิกัด `x`/`y` ต้องแก้ให้ตรงกับหน้าจอ Pi ของคุณ
 
 ## เริ่มโปรแกรม
 
