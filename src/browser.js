@@ -36,7 +36,7 @@ async function copyCurrentUrl() {
 function isYouTubeHomePage(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'www.youtube.com' && url.pathname === '/';
+    return url.protocol === 'https:' && ['youtube.com', 'www.youtube.com'].includes(url.hostname) && url.pathname === '/';
   } catch { return false; }
 }
 
