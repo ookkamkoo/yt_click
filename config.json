@@ -1,4 +1,12 @@
 {
+  "startDelay": {
+    "minMinutes": 5,
+    "maxMinutes": 30
+  },
+  "runtime": {
+    "minHours": 8,
+    "maxHours": 10
+  },
   "browser": {
     "url": "https://youtube.com",
     "waitMs": 12000,

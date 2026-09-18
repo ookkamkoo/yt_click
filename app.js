@@ -23,7 +23,33 @@ function loadConfig() {
   }
   if (!Number.isInteger(config.browser.focusWaitMs) || config.browser.focusWaitMs < 0) throw new Error('browser.focusWaitMs must be a non-negative integer.');
   if (!Number.isInteger(config.browser.videoCheckMs) || config.browser.videoCheckMs < 0) throw new Error('browser.videoCheckMs must be a non-negative integer.');
-  return config.browser;
+  const runtime = config.runtime;
+  if (!runtime || !Number.isFinite(runtime.minHours) || !Number.isFinite(runtime.maxHours) || runtime.minHours <= 0 || runtime.maxHours < runtime.minHours) {
+    throw new Error('runtime.minHours and runtime.maxHours must be positive numbers, with maxHours >= minHours.');
+  }
+  const startDelay = config.startDelay;
+  if (!startDelay || !Number.isFinite(startDelay.minMinutes) || !Number.isFinite(startDelay.maxMinutes) || startDelay.minMinutes < 0 || startDelay.maxMinutes < startDelay.minMinutes) {
+    throw new Error('startDelay.minMinutes and startDelay.maxMinutes must be non-negative numbers, with maxMinutes >= minMinutes.');
+  }
+  return config;
+}
+
+function runtimeMilliseconds({ minHours, maxHours }) {
+  return Math.round((minHours + Math.random() * (maxHours - minHours)) * 60 * 60 * 1000);
+}
+
+function startupDelayMilliseconds({ minMinutes, maxMinutes }) {
+  return Math.round((minMinutes + Math.random() * (maxMinutes - minMinutes)) * 60 * 1000);
+}
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function bangkokTime(date) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(date).filter(({ type }) => type !== 'literal').map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second} Asia/Bangkok`;
 }
 
 async function main() {
@@ -34,7 +60,20 @@ async function main() {
     return;
   }
   if (command) throw new Error(`Unknown command: ${command}`);
-  const result = await openChromiumOnLeft(loadConfig());
+  const config = loadConfig();
+  const startDelayMs = startupDelayMilliseconds(config.startDelay);
+  const startAt = new Date(Date.now() + startDelayMs);
+  console.log(`Start delay: ${(startDelayMs / 60000).toFixed(2)} minute(s). Browser will start at ${bangkokTime(startAt)}.`);
+  await delay(startDelayMs);
+  console.log(`Start delay completed at ${bangkokTime(new Date())}. Starting Chromium now.`);
+  const runtimeMs = runtimeMilliseconds(config.runtime);
+  const stopTimer = setTimeout(() => {
+    console.log('Maximum runtime reached. Stopping program.');
+    process.exit(0);
+  }, runtimeMs);
+  console.log(`Maximum runtime: ${(runtimeMs / 3600000).toFixed(2)} hour(s). Expected stop: ${bangkokTime(new Date(Date.now() + runtimeMs))}.`);
+  const result = await openChromiumOnLeft(config.browser);
+  clearTimeout(stopTimer);
   console.log(result.clicked
     ? `Chromium opened; first video clicked. VIDEO DURATION: ${result.duration.formatted} (${result.duration.seconds}s)`
     : `Chromium opened, but config.browser.url is not the YouTube home page: ${result.currentUrl}`);
@@ -44,3 +83,5 @@ main().catch((error) => {
   console.error(`ERROR: ${error.message || error}`);
   process.exitCode = 1;
 });
+
+module.exports = { runtimeMilliseconds, startupDelayMilliseconds };
