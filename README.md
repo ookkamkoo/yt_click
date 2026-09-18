@@ -6,11 +6,11 @@
 
 ```bash
 sudo apt update
-sudo apt install chromium wtype wl-clipboard
+sudo apt install chromium wtype
 npm install
 ```
 
-`wtype` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง Wayland desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้. `wl-clipboard` ใช้อ่าน URL จาก address bar.
+`wtype` เป็นตัวส่งคีย์บอร์ดเสมือนไปยัง Wayland desktop session เพื่อให้โปรแกรมส่ง `Super + Left Arrow` ได้.
 
 ติดตั้ง `ydotool` จาก `trixie-backports` เพื่อให้โปรแกรมคลิกพิกัดเมาส์:
 
@@ -26,21 +26,22 @@ sudo apt -t trixie-backports install ydotool
 {
   "browser": {
     "url": "https://youtube.com",
-    "waitMs": 8000,
+    "waitMs": 12000,
     "focus": {
       "x": 400,
       "y": 30
     },
+    "focusWaitMs": 3000,
     "firstVideo": {
       "x": 175,
       "y": 250,
-      "pageLoadMs": 15000
+      "pageLoadMs": 20000
     }
   }
 }
 ```
 
-`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `8000` คือ 8 วินาที. `focus` คือพิกัดบนแถบหัว/แท็บของ Chromium เพื่อบังคับให้ Chromium เป็นหน้าต่างที่รับคีย์บอร์ด. `pageLoadMs` คือเวลารอให้หน้า YouTube โหลดก่อนคลิกวิดีโอแรก; ค่าเริ่มต้น `15000` คือ 15 วินาที. พิกัด `x`/`y` ต้องแก้ให้ตรงกับหน้าจอ Pi ของคุณ
+`waitMs` คือเวลารอ Chromium เปิดและรับ focus ก่อนส่งคีย์ลัด; ค่าเริ่มต้น `12000` คือ 12 วินาที. `focus` คือพิกัดบนแถบหัว/แท็บของ Chromium เพื่อบังคับให้ Chromium เป็นหน้าต่างที่รับคีย์บอร์ด. `focusWaitMs` คือเวลารอหลังคลิก focus (ค่าเริ่มต้น 3 วินาที). `pageLoadMs` คือเวลารอให้หน้า YouTube โหลดก่อนคลิกวิดีโอแรก; ค่าเริ่มต้น `20000` คือ 20 วินาที. พิกัด `x`/`y` ต้องแก้ให้ตรงกับหน้าจอ Pi ของคุณ
 
 ## เริ่มโปรแกรม
 
@@ -50,6 +51,6 @@ sudo apt -t trixie-backports install ydotool
 npm start
 ```
 
-เมื่อ Chromium เปิดขึ้น โปรแกรมจะส่ง `Super + Left Arrow` เพื่อให้ window manager จัดหน้าต่างไปทางซ้าย จากนั้นคัดลอก URL ปัจจุบันจาก address bar; หากเป็น `https://www.youtube.com/` จะรอหน้าโหลดแล้วคลิกพิกัดวิดีโอแรก
+เมื่อ Chromium เปิดขึ้น โปรแกรมจะส่ง `Super + Left Arrow` เพื่อให้ window manager จัดหน้าต่างไปทางซ้าย จากนั้นตรวจ `browser.url` ที่โปรแกรมกำลังสั่งเปิด; หากเป็นหน้า YouTube Home จะรอหน้าโหลดแล้วคลิกพิกัดวิดีโอแรก
 
 > หากสั่งผ่าน SSH ต้องใช้ user เดียวกับที่ login desktop อยู่ และ desktop session ต้องกำลังทำงาน มิฉะนั้น Chromium จะไม่มีหน้าจอสำหรับเปิด

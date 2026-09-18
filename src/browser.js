@@ -12,36 +12,6 @@ function run(command, args) {
   });
 }
 
-function capture(command, args) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { windowsHide: true });
-    let stdout = '', stderr = '';
-    child.stdout.on('data', (data) => { stdout += data; });
-    child.stderr.on('data', (data) => { stderr += data; });
-    child.on('error', reject);
-    child.on('close', (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(stderr.trim() || `${command} exited with code ${code}`)));
-  });
-}
-
-async function copyCurrentUrl() {
-  // ydotool key codes: Ctrl=29, L=38, C=46, Escape=1.
-  await run('ydotool', ['key', '29:1', '38:1', '38:0', '29:0']);
-  await delay(500);
-  await run('ydotool', ['key', '29:1', '46:1', '46:0', '29:0']);
-  await delay(1000);
-
-  let value = '';
-  for (let attempt = 0; attempt < 3 && !value; attempt += 1) {
-    try { value = await capture('wl-paste', ['--no-newline']); }
-    catch (error) {
-      if (!String(error.message).includes('Nothing is copied')) throw error;
-      await delay(750);
-    }
-  }
-  await run('ydotool', ['key', '1:1', '1:0']);
-  return value;
-}
-
 function isYouTubeHomePage(value) {
   try {
     const url = new URL(value);
@@ -72,7 +42,7 @@ async function focusBrowser({ x, y }) {
   }
 }
 
-async function openChromiumOnLeft({ url, waitMs = 2000, firstVideo, focus }) {
+async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, firstVideo, focus }) {
   try {
     await run('chromium', ['--new-window', url]);
   } catch (error) {
@@ -89,12 +59,14 @@ async function openChromiumOnLeft({ url, waitMs = 2000, firstVideo, focus }) {
     if (error.code === 'ENOENT') throw new Error('wtype was not found. Install it with: sudo apt install wtype');
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
   }
-  // Focus a safe point on Chromium's title/tab bar before keyboard shortcuts.
+  // Focus a safe point on Chromium's title/tab bar before further screen actions.
   await focusBrowser(focus);
-  const currentUrl = await copyCurrentUrl();
-  if (!isYouTubeHomePage(currentUrl)) return { clicked: false, currentUrl };
+  await delay(focusWaitMs);
+  // The browser is launched with this configured URL. Reading the desktop
+  // clipboard over SSH is unreliable because it may contain terminal text.
+  if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
   await clickFirstVideo(firstVideo);
-  return { clicked: true, currentUrl };
+  return { clicked: true, currentUrl: url };
 }
 
 module.exports = { openChromiumOnLeft };

@@ -1,15 +1,16 @@
 {
   "browser": {
     "url": "https://youtube.com",
-    "waitMs": 8000,
+    "waitMs": 12000,
     "focus": {
       "x": 400,
       "y": 30
     },
+    "focusWaitMs": 3000,
     "firstVideo": {
       "x": 175,
       "y": 250,
-      "pageLoadMs": 15000
+      "pageLoadMs": 20000
     }
   }
 }

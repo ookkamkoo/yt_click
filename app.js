@@ -21,6 +21,7 @@ function loadConfig() {
   if (!focus || typeof focus !== 'object' || !Number.isFinite(focus.x) || !Number.isFinite(focus.y)) {
     throw new Error('browser.focus.x and browser.focus.y must be numbers.');
   }
+  if (!Number.isInteger(config.browser.focusWaitMs) || config.browser.focusWaitMs < 0) throw new Error('browser.focusWaitMs must be a non-negative integer.');
   return config.browser;
 }
 
@@ -34,8 +35,8 @@ async function main() {
   if (command) throw new Error(`Unknown command: ${command}`);
   const result = await openChromiumOnLeft(loadConfig());
   console.log(result.clicked
-    ? 'Chromium opened; YouTube URL verified and first video clicked.'
-    : `Chromium opened, but the current URL is not the YouTube home page: ${result.currentUrl || '(unable to read URL)'}`);
+    ? 'Chromium opened; configured YouTube URL accepted and first video clicked.'
+    : `Chromium opened, but config.browser.url is not the YouTube home page: ${result.currentUrl}`);
 }
 
 main().catch((error) => {
