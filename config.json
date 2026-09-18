@@ -1,7 +1,7 @@
 {
   "startDelay": {
-    "minMinutes": 5,
-    "maxMinutes": 30
+    "minMinutes": 0.01,
+    "maxMinutes": 0.02
   },
   "runtime": {
     "minHours": 8,
