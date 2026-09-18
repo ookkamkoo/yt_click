@@ -6,7 +6,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "check": "node --check app.js && node --check src/browser.js"
+    "position": "node position.js",
+    "check": "node --check app.js && node --check position.js && node --check src/browser.js"
   },
   "engines": {
     "node": ">=18"

@@ -7,6 +7,7 @@
 ```bash
 sudo apt update
 sudo apt install chromium wtype
+sudo apt install slurp
 npm install
 ```
 
@@ -52,5 +53,13 @@ npm start
 ```
 
 เมื่อ Chromium เปิดขึ้น โปรแกรมจะส่ง `Super + Left Arrow` เพื่อให้ window manager จัดหน้าต่างไปทางซ้าย จากนั้นตรวจ `browser.url` ที่โปรแกรมกำลังสั่งเปิด; หากเป็นหน้า YouTube Home จะรอหน้าโหลดแล้วคลิกพิกัดวิดีโอแรก
+
+## หาพิกัดบนหน้าจอ
+
+```bash
+npm run position
+```
+
+โปรแกรมนับถอยหลัง 2 วินาที จากนั้นคลิกจุดที่ต้องการหนึ่งครั้ง แล้วจะพิมพ์ `x` และ `y` สำหรับใส่ใน `config.json` เครื่องมือ `slurp` รองรับ Wayland บน Raspberry Pi OS [Debian package](https://packages.debian.org/trixie/slurp)
 
 > หากสั่งผ่าน SSH ต้องใช้ user เดียวกับที่ login desktop อยู่ และ desktop session ต้องกำลังทำงาน มิฉะนั้น Chromium จะไม่มีหน้าจอสำหรับเปิด
