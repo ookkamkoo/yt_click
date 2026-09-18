@@ -24,13 +24,22 @@ function capture(command, args) {
 }
 
 async function copyCurrentUrl() {
-  await run('wtype', ['-M', 'ctrl', '-k', 'L', '-m', 'ctrl']);
-  await delay(150);
-  await run('wtype', ['-M', 'ctrl', '-k', 'c', '-m', 'ctrl']);
-  await delay(250);
-  const url = await capture('wl-paste', ['--no-newline']);
-  await run('wtype', ['-k', 'Escape']);
-  return url;
+  // ydotool key codes: Ctrl=29, L=38, C=46, Escape=1.
+  await run('ydotool', ['key', '29:1', '38:1', '38:0', '29:0']);
+  await delay(500);
+  await run('ydotool', ['key', '29:1', '46:1', '46:0', '29:0']);
+  await delay(1000);
+
+  let value = '';
+  for (let attempt = 0; attempt < 3 && !value; attempt += 1) {
+    try { value = await capture('wl-paste', ['--no-newline']); }
+    catch (error) {
+      if (!String(error.message).includes('Nothing is copied')) throw error;
+      await delay(750);
+    }
+  }
+  await run('ydotool', ['key', '1:1', '1:0']);
+  return value;
 }
 
 function isYouTubeHomePage(value) {
