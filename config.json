@@ -1,6 +1,6 @@
 {
   "browser": {
     "url": "https://youtube.com",
-    "waitMs": 2000
+    "waitMs": 5000
   }
 }

@@ -22,7 +22,9 @@ async function openChromiumOnLeft({ url, waitMs = 2000 }) {
   await delay(waitMs);
   try {
     // `logo` is the Super/Windows key. This sends Super + Left Arrow on Wayland.
-    await run('wtype', ['-M', 'logo', '-k', 'Left', '-m', 'logo']);
+    // Keep Super pressed briefly; some Wayland window managers ignore an
+    // immediately-following arrow key while a new window is still focusing.
+    await run('wtype', ['-M', 'logo', '-s', '300', '-k', 'Left', '-s', '150', '-m', 'logo']);
   } catch (error) {
     if (error.code === 'ENOENT') throw new Error('wtype was not found. Install it with: sudo apt install wtype');
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
