@@ -70,8 +70,10 @@ async function currentVideoUrl() {
   return target.url;
 }
 
-async function currentVideoUrlFromClipboard() {
+async function currentVideoUrlFromClipboard(focus, scale) {
   try {
+    await focusBrowser(focus, scale);
+    await delay(300);
     await runAndWait('wtype', ['-M', 'ctrl', '-k', 'l', '-m', 'ctrl']);
     await runAndWait('wtype', ['-M', 'ctrl', '-k', 'c', '-m', 'ctrl']);
     await delay(200);
@@ -212,7 +214,7 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotool
   let videoNumber = 1;
   while (true) {
     await delay(videoCheckMs);
-    const videoUrl = (launch || useUserProfile) ? await currentVideoUrlFromClipboard() : await currentVideoUrl();
+    const videoUrl = (launch || useUserProfile) ? await currentVideoUrlFromClipboard(focus, ydotoolCoordinateScale) : await currentVideoUrl();
     const duration = await getVideoDuration(videoUrl);
     const nextVideoIndex = Math.floor(Math.random() * nextVideos.length);
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;
