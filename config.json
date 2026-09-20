@@ -17,7 +17,7 @@
       "y": 126
     },
     "focusWaitMs": 3000,
-    "videoCheckMs": 7000,
+    "videoCheckMs": 15000,
     "nextVideoBufferMs": 3000,
     "nextVideoScrollPages": 1,
     "scrollFocus": { "x": 474, "y": 808 },
