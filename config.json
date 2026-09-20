@@ -10,7 +10,7 @@
   "browser": {
     "url": "https://youtube.com",
     "launch": {
-      "x": 76,
+      "x": 48,
       "y": 18,
       "waitMs": 5000
     },
