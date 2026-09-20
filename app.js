@@ -20,6 +20,9 @@ function loadConfig() {
   if (config.browser.useUserProfile !== undefined && typeof config.browser.useUserProfile !== 'boolean') {
     throw new Error('browser.useUserProfile must be true or false.');
   }
+  if (config.browser.ydotoolCoordinateScale !== undefined && (!Number.isFinite(config.browser.ydotoolCoordinateScale) || config.browser.ydotoolCoordinateScale <= 0)) {
+    throw new Error('browser.ydotoolCoordinateScale must be a positive number.');
+  }
   if (config.browser.waitMs !== undefined && (!Number.isInteger(config.browser.waitMs) || config.browser.waitMs < 0)) throw new Error('browser.waitMs must be a non-negative integer.');
   if (!Array.isArray(config.browser.initialVideos) || config.browser.initialVideos.length < 1 || config.browser.initialVideos.length > 4) {
     throw new Error('browser.initialVideos must contain 1 to 4 coordinate objects.');

@@ -115,21 +115,27 @@ function isYouTubeHomePage(value) {
   } catch { return false; }
 }
 
-async function clickPoint({ x, y }) {
+function scaledPoint({ x, y }, scale) {
+  return { x: Math.round(x * scale), y: Math.round(y * scale) };
+}
+
+async function clickPoint(point, scale = 1) {
+  const { x, y } = scaledPoint(point, scale);
   await runAndWait('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
   await delay(150);
   await runAndWait('ydotool', ['click', '0xC0']);
 }
 
-async function clickInitialVideo(initialVideos, initialPageLoadMs) {
+async function clickInitialVideo(initialVideos, initialPageLoadMs, scale) {
   await delay(initialPageLoadMs);
   const initialVideoIndex = Math.floor(Math.random() * initialVideos.length);
   const point = initialVideos[initialVideoIndex];
   console.log(`Initial video choice: ${initialVideoIndex + 1} at x=${point.x}, y=${point.y}.`);
-  await clickPoint(point);
+  await clickPoint(point, scale);
 }
 
-async function focusBrowser({ x, y }) {
+async function focusBrowser(point, scale = 1) {
+  const { x, y } = scaledPoint(point, scale);
   try {
     await runAndWait('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
     await runAndWait('ydotool', ['click', '0xC0']);
@@ -146,7 +152,7 @@ async function navigateToUrl(url) {
   await runAndWait('wtype', ['-k', 'Return']);
 }
 
-async function openChromiumOnLeft({ url, launch, useUserProfile = false, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
+async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotoolCoordinateScale = 1, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
   if (useUserProfile) {
     try {
       await run('chromium', ['--new-window', url]);
@@ -156,7 +162,7 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, waitMs 
     }
     await delay(waitMs);
   } else if (launch) {
-    await clickPoint(launch);
+    await clickPoint(launch, ydotoolCoordinateScale);
     await delay(launch.waitMs);
   } else {
     try {
@@ -185,13 +191,13 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, waitMs 
   }
   // Focus a safe point on Chromium's title/tab bar before further screen actions.
   if (!useUserProfile) {
-    await focusBrowser(focus);
+    await focusBrowser(focus, ydotoolCoordinateScale);
     await delay(focusWaitMs);
     await navigateToUrl(url);
     await delay(focusWaitMs);
   }
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
-  await clickInitialVideo(initialVideos, initialPageLoadMs);
+  await clickInitialVideo(initialVideos, initialPageLoadMs, ydotoolCoordinateScale);
   let videoNumber = 1;
   while (true) {
     await delay(videoCheckMs);
@@ -201,7 +207,7 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, waitMs 
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;
     console.log(`Video #${videoNumber}: ${duration.formatted} (${duration.seconds}s). Waiting ${(totalWaitMs / 1000).toFixed(0)} seconds; next choice: ${nextVideoIndex + 1}.`);
     await delay(totalWaitMs);
-    await clickPoint(nextVideos[nextVideoIndex]);
+    await clickPoint(nextVideos[nextVideoIndex], ydotoolCoordinateScale);
     videoNumber += 1;
   }
 }

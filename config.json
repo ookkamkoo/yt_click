@@ -10,6 +10,7 @@
   "browser": {
     "url": "https://youtube.com",
     "useUserProfile": true,
+    "ydotoolCoordinateScale": 0.5,
     "waitMs": 12000,
     "focus": {
       "x": 297,
