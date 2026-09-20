@@ -9,11 +9,7 @@
   },
   "browser": {
     "url": "https://youtube.com",
-    "launch": {
-      "x": 48,
-      "y": 18,
-      "waitMs": 5000
-    },
+    "useUserProfile": true,
     "waitMs": 12000,
     "focus": {
       "x": 297,

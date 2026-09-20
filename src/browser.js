@@ -146,8 +146,16 @@ async function navigateToUrl(url) {
   await runAndWait('wtype', ['-k', 'Return']);
 }
 
-async function openChromiumOnLeft({ url, launch, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
-  if (launch) {
+async function openChromiumOnLeft({ url, launch, useUserProfile = false, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
+  if (useUserProfile) {
+    try {
+      await run('chromium', ['--new-window', url]);
+    } catch (error) {
+      if (error.code === 'ENOENT') throw new Error('Chromium was not found. Install it with: sudo apt install chromium');
+      throw error;
+    }
+    await delay(waitMs);
+  } else if (launch) {
     await clickPoint(launch);
     await delay(launch.waitMs);
   } else {
@@ -176,16 +184,18 @@ async function openChromiumOnLeft({ url, launch, waitMs = 2000, focusWaitMs = 20
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
   }
   // Focus a safe point on Chromium's title/tab bar before further screen actions.
-  await focusBrowser(focus);
-  await delay(focusWaitMs);
-  await navigateToUrl(url);
-  await delay(focusWaitMs);
+  if (!useUserProfile) {
+    await focusBrowser(focus);
+    await delay(focusWaitMs);
+    await navigateToUrl(url);
+    await delay(focusWaitMs);
+  }
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
   await clickInitialVideo(initialVideos, initialPageLoadMs);
   let videoNumber = 1;
   while (true) {
     await delay(videoCheckMs);
-    const videoUrl = launch ? await currentVideoUrlFromClipboard() : await currentVideoUrl();
+    const videoUrl = (launch || useUserProfile) ? await currentVideoUrlFromClipboard() : await currentVideoUrl();
     const duration = await getVideoDuration(videoUrl);
     const nextVideoIndex = Math.floor(Math.random() * nextVideos.length);
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;
