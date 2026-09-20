@@ -11,6 +11,12 @@ function loadConfig() {
   catch (error) { throw new Error(`Cannot read config.json: ${error.message}`); }
   if (!config.browser || typeof config.browser !== 'object') throw new Error('config.json.browser is required.');
   if (typeof config.browser.url !== 'string' || !config.browser.url.startsWith('http')) throw new Error('browser.url must be a valid http/https URL.');
+  if (config.browser.launch !== undefined) {
+    const launch = config.browser.launch;
+    if (!launch || !Number.isFinite(launch.x) || !Number.isFinite(launch.y) || !Number.isInteger(launch.waitMs) || launch.waitMs < 0) {
+      throw new Error('browser.launch must contain numeric x/y and a non-negative integer waitMs.');
+    }
+  }
   if (config.browser.waitMs !== undefined && (!Number.isInteger(config.browser.waitMs) || config.browser.waitMs < 0)) throw new Error('browser.waitMs must be a non-negative integer.');
   if (!Array.isArray(config.browser.initialVideos) || config.browser.initialVideos.length < 1 || config.browser.initialVideos.length > 4) {
     throw new Error('browser.initialVideos must contain 1 to 4 coordinate objects.');

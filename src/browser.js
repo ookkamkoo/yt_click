@@ -70,6 +70,23 @@ async function currentVideoUrl() {
   return target.url;
 }
 
+async function currentVideoUrlFromClipboard() {
+  try {
+    await runAndWait('wtype', ['-M', 'ctrl', '-k', 'l', '-m', 'ctrl']);
+    await runAndWait('wtype', ['-M', 'ctrl', '-k', 'c', '-m', 'ctrl']);
+    await delay(200);
+    const clipboard = await capture('wl-paste', ['--no-newline']);
+    await runAndWait('wtype', ['-k', 'Escape']);
+    if (!/^https:\/\/(www\.)?youtube\.com\/(watch|shorts)\b/.test(clipboard)) {
+      throw new Error(`Could not read a YouTube video URL. Clipboard contains: ${clipboard || '(empty)'}`);
+    }
+    return clipboard;
+  } catch (error) {
+    if (error.code === 'ENOENT') throw new Error('wl-paste was not found. Install it with: sudo apt install wl-clipboard');
+    throw error;
+  }
+}
+
 function formatDuration(seconds) {
   const total = Math.round(seconds);
   const hours = Math.floor(total / 3600);
@@ -123,21 +140,32 @@ async function focusBrowser({ x, y }) {
   }
 }
 
-async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
-  try {
-    // A dedicated profile makes sure Chromium starts a process with DevTools
-    // enabled instead of forwarding this request to an existing browser.
-    await run('chromium', [
-      `--remote-debugging-port=${REMOTE_DEBUGGING_PORT}`,
-      `--user-data-dir=${CHROMIUM_PROFILE_DIR}`,
-      '--new-window',
-      url
-    ]);
-  } catch (error) {
-    if (error.code === 'ENOENT') throw new Error('Chromium was not found. Install it with: sudo apt install chromium');
-    throw error;
+async function navigateToUrl(url) {
+  await runAndWait('wtype', ['-M', 'ctrl', '-k', 'l', '-m', 'ctrl']);
+  await runAndWait('wtype', [url]);
+  await runAndWait('wtype', ['-k', 'Return']);
+}
+
+async function openChromiumOnLeft({ url, launch, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
+  if (launch) {
+    await clickPoint(launch);
+    await delay(launch.waitMs);
+  } else {
+    try {
+      // A dedicated profile makes sure Chromium starts a process with DevTools
+      // enabled instead of forwarding this request to an existing browser.
+      await run('chromium', [
+        `--remote-debugging-port=${REMOTE_DEBUGGING_PORT}`,
+        `--user-data-dir=${CHROMIUM_PROFILE_DIR}`,
+        '--new-window',
+        url
+      ]);
+    } catch (error) {
+      if (error.code === 'ENOENT') throw new Error('Chromium was not found. Install it with: sudo apt install chromium');
+      throw error;
+    }
+    await delay(waitMs);
   }
-  await delay(waitMs);
   try {
     // `logo` is the Super/Windows key. This sends Super + Left Arrow on Wayland.
     // Keep Super pressed briefly; some Wayland window managers ignore an
@@ -150,12 +178,14 @@ async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, vide
   // Focus a safe point on Chromium's title/tab bar before further screen actions.
   await focusBrowser(focus);
   await delay(focusWaitMs);
+  await navigateToUrl(url);
+  await delay(focusWaitMs);
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
   await clickInitialVideo(initialVideos, initialPageLoadMs);
   let videoNumber = 1;
   while (true) {
     await delay(videoCheckMs);
-    const videoUrl = await currentVideoUrl();
+    const videoUrl = launch ? await currentVideoUrlFromClipboard() : await currentVideoUrl();
     const duration = await getVideoDuration(videoUrl);
     const nextVideoIndex = Math.floor(Math.random() * nextVideos.length);
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;

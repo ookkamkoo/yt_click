@@ -9,6 +9,11 @@
   },
   "browser": {
     "url": "https://youtube.com",
+    "launch": {
+      "x": 74,
+      "y": 19,
+      "waitMs": 5000
+    },
     "waitMs": 12000,
     "focus": {
       "x": 297,
