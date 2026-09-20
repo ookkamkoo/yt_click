@@ -1,7 +1,12 @@
 'use strict';
 
+const http = require('http');
+const os = require('os');
+const path = require('path');
 const { spawn } = require('child_process');
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const REMOTE_DEBUGGING_PORT = 9222;
+const CHROMIUM_PROFILE_DIR = path.join(os.tmpdir(), 'yt-click-chromium-profile');
 
 function run(command, args) {
   return new Promise((resolve, reject) => {
@@ -9,6 +14,19 @@ function run(command, args) {
     child.once('error', reject);
     // Chromium remains running, so resolving after it starts is intentional.
     setTimeout(resolve, 300);
+  });
+}
+
+function runAndWait(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { windowsHide: true });
+    let stderr = '';
+    child.stderr.on('data', (data) => { stderr += data; });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(stderr.trim() || `${command} exited with code ${code}`));
+    });
   });
 }
 
@@ -23,18 +41,33 @@ function capture(command, args) {
   });
 }
 
-async function copyVideoUrl() {
-  // The video click leaves Chromium focused. Select/copy its address bar.
-  await run('ydotool', ['key', '29:1', '38:1', '38:0', '29:0']); // Ctrl+L
-  await delay(400);
-  await run('ydotool', ['key', '29:1', '46:1', '46:0', '29:0']); // Ctrl+C
-  await delay(900);
-  const url = await capture('wl-paste', ['--no-newline']);
-  await run('ydotool', ['key', '1:1', '1:0']); // Escape
-  if (!/^https:\/\/(www\.)?youtube\.com\/(watch|shorts)\b/.test(url)) {
-    throw new Error(`Could not read a YouTube video URL. Clipboard contains: ${url || '(empty)'}`);
+function remoteDebuggingTargets() {
+  return new Promise((resolve, reject) => {
+    const request = http.get({ host: '127.0.0.1', port: REMOTE_DEBUGGING_PORT, path: '/json/list', timeout: 2000 }, (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => { body += chunk; });
+      response.on('end', () => {
+        if (response.statusCode !== 200) return reject(new Error(`DevTools returned HTTP ${response.statusCode}`));
+        try { resolve(JSON.parse(body)); }
+        catch (error) { reject(new Error(`DevTools returned invalid JSON: ${error.message}`)); }
+      });
+    });
+    request.on('timeout', () => request.destroy(new Error('DevTools connection timed out')));
+    request.on('error', reject);
+  });
+}
+
+async function currentVideoUrl() {
+  let targets;
+  try {
+    targets = await remoteDebuggingTargets();
+  } catch (error) {
+    throw new Error(`Could not read Chromium's current tab. Ensure port ${REMOTE_DEBUGGING_PORT} is available: ${error.message}`);
   }
-  return url;
+  const target = targets.find(({ type, url }) => type === 'page' && /^https:\/\/(www\.)?youtube\.com\/(watch|shorts)\b/.test(url));
+  if (!target) throw new Error('Chromium has not navigated to a YouTube video yet. Check the configured video coordinates.');
+  return target.url;
 }
 
 function formatDuration(seconds) {
@@ -66,22 +99,23 @@ function isYouTubeHomePage(value) {
 }
 
 async function clickPoint({ x, y }) {
-  await run('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
+  await runAndWait('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
   await delay(150);
-  await run('ydotool', ['click', '0xC0']);
+  await runAndWait('ydotool', ['click', '0xC0']);
 }
 
 async function clickInitialVideo(initialVideos, initialPageLoadMs) {
   await delay(initialPageLoadMs);
   const initialVideoIndex = Math.floor(Math.random() * initialVideos.length);
-  await clickPoint(initialVideos[initialVideoIndex]);
-  console.log(`Initial video choice: ${initialVideoIndex + 1}.`);
+  const point = initialVideos[initialVideoIndex];
+  console.log(`Initial video choice: ${initialVideoIndex + 1} at x=${point.x}, y=${point.y}.`);
+  await clickPoint(point);
 }
 
 async function focusBrowser({ x, y }) {
   try {
-    await run('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
-    await run('ydotool', ['click', '0xC0']);
+    await runAndWait('ydotool', ['mousemove', '--absolute', String(x), String(y)]);
+    await runAndWait('ydotool', ['click', '0xC0']);
     await delay(500);
   } catch (error) {
     if (error.code === 'ENOENT') throw new Error('ydotool was not found. Install it from Debian trixie-backports.');
@@ -91,7 +125,14 @@ async function focusBrowser({ x, y }) {
 
 async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
   try {
-    await run('chromium', ['--new-window', url]);
+    // A dedicated profile makes sure Chromium starts a process with DevTools
+    // enabled instead of forwarding this request to an existing browser.
+    await run('chromium', [
+      `--remote-debugging-port=${REMOTE_DEBUGGING_PORT}`,
+      `--user-data-dir=${CHROMIUM_PROFILE_DIR}`,
+      '--new-window',
+      url
+    ]);
   } catch (error) {
     if (error.code === 'ENOENT') throw new Error('Chromium was not found. Install it with: sudo apt install chromium');
     throw error;
@@ -101,7 +142,7 @@ async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, vide
     // `logo` is the Super/Windows key. This sends Super + Left Arrow on Wayland.
     // Keep Super pressed briefly; some Wayland window managers ignore an
     // immediately-following arrow key while a new window is still focusing.
-    await run('wtype', ['-M', 'logo', '-s', '300', '-k', 'Left', '-s', '150', '-m', 'logo']);
+    await runAndWait('wtype', ['-M', 'logo', '-s', '300', '-k', 'Left', '-s', '150', '-m', 'logo']);
   } catch (error) {
     if (error.code === 'ENOENT') throw new Error('wtype was not found. Install it with: sudo apt install wtype');
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
@@ -109,14 +150,12 @@ async function openChromiumOnLeft({ url, waitMs = 2000, focusWaitMs = 2000, vide
   // Focus a safe point on Chromium's title/tab bar before further screen actions.
   await focusBrowser(focus);
   await delay(focusWaitMs);
-  // The browser is launched with this configured URL. Reading the desktop
-  // clipboard over SSH is unreliable because it may contain terminal text.
   if (!isYouTubeHomePage(url)) return { clicked: false, currentUrl: url };
   await clickInitialVideo(initialVideos, initialPageLoadMs);
   let videoNumber = 1;
   while (true) {
     await delay(videoCheckMs);
-    const videoUrl = await copyVideoUrl();
+    const videoUrl = await currentVideoUrl();
     const duration = await getVideoDuration(videoUrl);
     const nextVideoIndex = Math.floor(Math.random() * nextVideos.length);
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;

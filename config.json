@@ -11,8 +11,8 @@
     "url": "https://youtube.com",
     "waitMs": 12000,
     "focus": {
-      "x": 400,
-      "y": 30
+      "x": 297,
+      "y": 126
     },
     "focusWaitMs": 3000,
     "videoCheckMs": 7000,
