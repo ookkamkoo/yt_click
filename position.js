@@ -19,17 +19,26 @@ function selectPoint() {
 }
 
 async function main() {
-  for (let seconds = 2; seconds > 0; seconds -= 1) {
-    console.log(`Select the target point in ${seconds}...`);
-    await delay(1000);
+  const count = Number(process.argv[2] || 1);
+  if (!Number.isInteger(count) || count < 1 || count > 4) {
+    throw new Error('Usage: node position.js [1-4]');
   }
-  console.log('Click the target point once. Press Escape to cancel.');
-  const output = await selectPoint();
-  const match = output.match(/^(-?\d+),(-?\d+)/);
-  if (!match) throw new Error(`Could not read coordinates: ${output}`);
-  const [, x, y] = match;
-  console.log(`POSITION x=${x} y=${y}`);
-  console.log(`Paste into config.json: { "x": ${x}, "y": ${y} }`);
+  const positions = [];
+  for (let index = 0; index < count; index += 1) {
+    for (let seconds = 2; seconds > 0; seconds -= 1) {
+      console.log(`Select point ${index + 1}/${count} in ${seconds}...`);
+      await delay(1000);
+    }
+    console.log(`Click target point ${index + 1}/${count}. Press Escape to cancel.`);
+    const output = await selectPoint();
+    const match = output.match(/^(-?\d+),(-?\d+)/);
+    if (!match) throw new Error(`Could not read coordinates: ${output}`);
+    const [, x, y] = match;
+    positions.push({ x: Number(x), y: Number(y) });
+    console.log(`POSITION ${index + 1}: x=${x} y=${y}`);
+  }
+  if (count === 1) console.log(`Paste into config.json: ${JSON.stringify(positions[0])}`);
+  else console.log(`Paste into config.json initialVideos: ${JSON.stringify(positions)}`);
 }
 
 main().catch((error) => {

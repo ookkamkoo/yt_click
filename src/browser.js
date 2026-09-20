@@ -152,7 +152,18 @@ async function navigateToUrl(url) {
   await runAndWait('wtype', ['-k', 'Return']);
 }
 
-async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotoolCoordinateScale = 1, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, focus }) {
+async function scrollToNextVideos(pages, focus, scale) {
+  if (focus) {
+    await clickPoint(focus, scale);
+    await delay(300);
+  }
+  for (let page = 0; page < pages; page += 1) {
+    await runAndWait('ydotool', ['key', '109:1', '109:0']); // Page Down
+    await delay(1000);
+  }
+}
+
+async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotoolCoordinateScale = 1, waitMs = 2000, focusWaitMs = 2000, videoCheckMs = 5000, initialVideos, initialPageLoadMs = 20000, nextVideos, nextVideoBufferMs = 3000, nextVideoScrollPages = 1, scrollFocus, focus }) {
   if (useUserProfile) {
     try {
       await run('chromium', ['--new-window', url]);
@@ -190,9 +201,9 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotool
     throw new Error(`Could not send the left-window shortcut: ${error.message}`);
   }
   // Focus a safe point on Chromium's title/tab bar before further screen actions.
+  await focusBrowser(focus, ydotoolCoordinateScale);
+  await delay(focusWaitMs);
   if (!useUserProfile) {
-    await focusBrowser(focus, ydotoolCoordinateScale);
-    await delay(focusWaitMs);
     await navigateToUrl(url);
     await delay(focusWaitMs);
   }
@@ -207,6 +218,7 @@ async function openChromiumOnLeft({ url, launch, useUserProfile = false, ydotool
     const totalWaitMs = duration.seconds * 1000 + nextVideoBufferMs;
     console.log(`Video #${videoNumber}: ${duration.formatted} (${duration.seconds}s). Waiting ${(totalWaitMs / 1000).toFixed(0)} seconds; next choice: ${nextVideoIndex + 1}.`);
     await delay(totalWaitMs);
+    await scrollToNextVideos(nextVideoScrollPages, scrollFocus, ydotoolCoordinateScale);
     await clickPoint(nextVideos[nextVideoIndex], ydotoolCoordinateScale);
     videoNumber += 1;
   }

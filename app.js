@@ -37,6 +37,10 @@ function loadConfig() {
   }
   if (!Number.isInteger(config.browser.focusWaitMs) || config.browser.focusWaitMs < 0) throw new Error('browser.focusWaitMs must be a non-negative integer.');
   if (!Number.isInteger(config.browser.videoCheckMs) || config.browser.videoCheckMs < 0) throw new Error('browser.videoCheckMs must be a non-negative integer.');
+  if (!Number.isInteger(config.browser.nextVideoScrollPages) || config.browser.nextVideoScrollPages < 0) throw new Error('browser.nextVideoScrollPages must be a non-negative integer.');
+  if (config.browser.scrollFocus !== undefined && (!config.browser.scrollFocus || !Number.isFinite(config.browser.scrollFocus.x) || !Number.isFinite(config.browser.scrollFocus.y))) {
+    throw new Error('browser.scrollFocus must contain numeric x and y.');
+  }
   if (!Array.isArray(config.browser.nextVideos) || config.browser.nextVideos.length < 1 || config.browser.nextVideos.length > 4) {
     throw new Error('browser.nextVideos must contain 1 to 4 coordinate objects.');
   }

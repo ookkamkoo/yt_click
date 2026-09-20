@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node app.js",
     "position": "node position.js",
+    "positions": "node position.js 4",
     "check": "node --check app.js && node --check position.js && node --check src/browser.js"
   },
   "engines": {
